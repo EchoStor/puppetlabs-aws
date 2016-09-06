@@ -23,7 +23,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     end.flatten
   end
 
-  read_only(:vpc, :region, :default, :entries)
+  read_only(:vpc, :region, :default, :entries, :associations)
 
   def self.prefetch(resources)
     instances.each do |prov|
@@ -49,6 +49,18 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     entries.flatten.uniq.compact
   end
 
+  def self.format_association(acl,region)
+      associations = []
+      acl[:associations].each do |association|
+        response = ec2_client(region).describe_subnets(subnet_ids: [association.subnet_id])
+        subnet_names = response.data.subnets.collect do |subnet|
+          subnet_name_tag = subnet.tags.detect {|tag| tag.key == 'Name'}
+          associations << subnet_name_tag.value
+        end
+      end
+      associations.flatten.uniq.compact
+  end
+
   def self.acl_to_hash(region, acl)
     name = name_from_tag(acl)
     return {} unless name
@@ -62,6 +74,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
       default: acl.is_default,
       tags: tags_for(acl),
       entries: format_entries(acl),
+      associations: format_association(acl,region),
     }
   end
 

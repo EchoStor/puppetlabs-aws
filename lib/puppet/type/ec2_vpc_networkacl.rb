@@ -28,6 +28,14 @@ Puppet::Type.newtype(:ec2_vpc_networkacl) do
     end
   end
 
+  newproperty(:associations, :array_matching => :all) do
+    desc 'entries for traffic'
+    validate do |value|
+      fail 'ingress should be a Hash' unless value.is_a?(Hash)
+    end
+  end
+
+
   newproperty(:region) do
     desc 'the region in which to launch the ACL'
     validate do |value|
