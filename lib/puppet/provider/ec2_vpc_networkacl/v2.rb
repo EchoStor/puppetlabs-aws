@@ -23,7 +23,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     end.flatten
   end
 
-  read_only(:vpc, :region, :default)
+  read_only(:vpc, :region, :default, :entries)
 
   def self.prefetch(resources)
     instances.each do |prov|
@@ -31,6 +31,22 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
         resource.provider = prov if resource[:region] == prov.region
       end
     end
+  end
+
+  def self.format_entries(acl)
+    entries = []
+    acl[:entries].each do |entry|
+      if entry.rule_number < 32767
+        config = {
+            'cidr_block' => entry.cidr_block,
+            'egress' => entry.egress,
+            'action' => entry.rule_action,
+            'number' => entry.rule_number,
+        }
+        entries << config
+      end
+    end
+    entries.flatten.uniq.compact
   end
 
   def self.acl_to_hash(region, acl)
@@ -45,6 +61,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
       region: region,
       default: acl.is_default,
       tags: tags_for(acl),
+      entries: format_entries(acl),
     }
   end
 

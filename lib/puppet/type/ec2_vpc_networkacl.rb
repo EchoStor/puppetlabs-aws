@@ -13,6 +13,21 @@ Puppet::Type.newtype(:ec2_vpc_networkacl) do
     end
   end
 
+  newproperty(:entries, :array_matching => :all) do
+    desc 'entries for traffic'
+    def insync?(is)
+      for_comparison = Marshal.load(Marshal.dump(should))
+      parser = PuppetX::Puppetlabs::NetowrkAclEntryParser.new(for_comparison)
+      to_create = parser.rules_to_create(is)
+      to_delete = parser.rules_to_delete(is)
+      to_create.empty? && to_delete.empty?
+    end
+
+    validate do |value|
+      fail 'ingress should be a Hash' unless value.is_a?(Hash)
+    end
+  end
+
   newproperty(:region) do
     desc 'the region in which to launch the ACL'
     validate do |value|
