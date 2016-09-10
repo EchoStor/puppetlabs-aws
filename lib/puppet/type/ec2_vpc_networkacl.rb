@@ -1,4 +1,5 @@
 require_relative '../../puppet_x/puppetlabs/property/tag.rb'
+require_relative '../../puppet_x/puppetlabs/network_acl_entry_parser'
 
 Puppet::Type.newtype(:ec2_vpc_networkacl) do
   @doc = 'Type representing a Network Access Control List.'
@@ -17,9 +18,9 @@ Puppet::Type.newtype(:ec2_vpc_networkacl) do
     desc 'entries for traffic'
     def insync?(is)
       for_comparison = Marshal.load(Marshal.dump(should))
-      parser = PuppetX::Puppetlabs::NetowrkAclEntryParser.new(for_comparison)
-      to_create = parser.rules_to_create(is)
-      to_delete = parser.rules_to_delete(is)
+      parser = PuppetX::Puppetlabs::NetworkAclEntryParser.new(for_comparison)
+      to_create = parser.entries_to_create(is)
+      to_delete = parser.entries_to_delete(is)
       to_create.empty? && to_delete.empty?
     end
 

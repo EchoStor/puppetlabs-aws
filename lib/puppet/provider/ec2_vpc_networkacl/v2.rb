@@ -23,7 +23,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     end.flatten
   end
 
-  read_only(:vpc, :region, :default, :entries, :associations)
+  read_only(:vpc, :region, :default, :associations, :entries)
 
   def self.prefetch(resources)
     instances.each do |prov|
@@ -40,8 +40,8 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
         config = {
             'cidr_block' => entry.cidr_block,
             'egress' => entry.egress,
-            'action' => entry.rule_action,
-            'number' => entry.rule_number,
+            'rule_action' => entry.rule_action,
+            'rule_number' => entry.rule_number,
         }
         entries << config
       end
@@ -95,20 +95,37 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
       vpc_id: vpc_response.data.vpcs.first.vpc_id,
     )
     acl_id = response.data.network_acl.network_acl_id
+
     with_retries(:max_tries => 5) do
+      Puppet.debug(tags_for_resource)
       ec2.create_tags(
         resources: [acl_id],
         tags: tags_for_resource,
       )
     end
 
+    create_entries(resource[:entries], acl_id)
+
     @property_hash[:ensure] = :present
   end
 
+  def create_entries(entries, acl_id)
+    ec2 = ec2_client(target_region)
+    entries.each do |entry|
+      rule = {}
+      rule[:network_acl_id] = acl_id
+      rule[:protocol] = '-1'
+      entry.each{|k,v| rule[k.to_sym] = v}
+      Puppet.debug(rule.to_s)
+      ec2.create_network_acl_entry(rule)
+    end
+  end
+
+
   def destroy
-    Puppet.info("Deleting subnet #{name} in #{target_region}")
-    ec2_client(target_region).delete_subnet(
-      subnet_id: @property_hash[:id]
+    Puppet.info("Deleting ACL #{name} in #{target_region}")
+    ec2_client(target_region).delete_network_acl(
+      network_acl_id: @property_hash[:id]
     )
     @property_hash[:ensure] = :absent
   end
