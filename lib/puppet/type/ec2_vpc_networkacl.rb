@@ -30,9 +30,9 @@ Puppet::Type.newtype(:ec2_vpc_networkacl) do
   end
 
   newproperty(:associations, :array_matching => :all) do
-    desc 'entries for traffic'
+    desc 'subnet associations'
     validate do |value|
-      fail 'ingress should be a Hash' unless value.is_a?(Hash)
+      fail 'associations should be a String' unless value.is_a?(String)
     end
   end
 

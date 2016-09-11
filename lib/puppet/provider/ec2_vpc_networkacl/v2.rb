@@ -91,8 +91,9 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     ])
     fail("Multiple VPCs with name #{resource[:vpc]}") if vpc_response.data.vpcs.count > 1
     fail("No VPCs with name #{resource[:vpc]}") if vpc_response.data.vpcs.empty?
+    vpc_id = vpc_response.data.vpcs.first.vpc_id
     response = ec2.create_network_acl(
-      vpc_id: vpc_response.data.vpcs.first.vpc_id,
+      vpc_id: vpc_id,
     )
     acl_id = response.data.network_acl.network_acl_id
 
@@ -104,7 +105,12 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
       )
     end
 
-    create_entries(resource[:entries], acl_id)
+    unless resource[:entries].empty?
+      create_entries(resource[:entries], acl_id)
+    end
+    unless resource[:associations].empty?
+      associate_subnets(resource[:associations],vpc_id,acl_id)
+    end
 
     @property_hash[:ensure] = :present
   end
@@ -121,6 +127,29 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     end
   end
 
+  def associate_subnets(subs, vpc_id, acl_id)
+  ec2 = ec2_client(target_region)
+  subnet_response = ec2.describe_subnets(filters:
+    [{name: 'tag:Name', values: subs},{name: 'vpc-id',values: [vpc_id]}])
+  fail("No subnets found") if subnet_response.data.subnets.empty?
+  subnet_ids = []
+  subnet_response.subnets.each do |subnet|
+    subnet_ids <<  subnet.subnet_id
+  end
+  Puppet.info(subnet_ids)
+
+  acl_response = ec2.describe_network_acls(filters:
+    [{name: 'association.subnet-id', values: subnet_ids},{name: 'vpc-id',values: [vpc_id]}])
+  acl_response.network_acls.each do |acl|
+    acl.associations.each do |association|
+      if association.network_acl_id != acl_id and subnet_ids.include? association.subnet_id
+        ec2.replace_network_acl_association({
+          association_id: association.network_acl_association_id,
+          network_acl_id: acl_id})
+      end
+    end
+  end
+end
 
   def destroy
     Puppet.info("Deleting ACL #{name} in #{target_region}")
