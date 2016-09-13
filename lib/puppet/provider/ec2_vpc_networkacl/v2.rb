@@ -23,7 +23,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     end.flatten
   end
 
-  read_only(:vpc, :region, :default, :associations, :entries)
+  read_only(:vpc, :region, :default, :associations, :entries, :protocol)
 
   def self.prefetch(resources)
     instances.each do |prov|
@@ -42,6 +42,8 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
             'egress' => entry.egress,
             'rule_action' => entry.rule_action,
             'rule_number' => entry.rule_number,
+            'protocol'    => entry.protocol,
+            'port_range'  => entry.port_range.to_h,
         }
         entries << config
       end
