@@ -17,11 +17,12 @@ Puppet::Type.newtype(:ec2_vpc_networkacl) do
   newproperty(:entries, :array_matching => :all) do
     desc 'entries for traffic'
     def insync?(is)
-      for_comparison = Marshal.load(Marshal.dump(should))
-      parser = PuppetX::Puppetlabs::NetworkAclEntryParser.new(for_comparison)
-      to_create = parser.entries_to_create(is)
-      to_delete = parser.entries_to_delete(is)
-      to_create.empty? && to_delete.empty?
+      #for_comparison = Marshal.load(Marshal.dump(should))
+      #parser = PuppetX::Puppetlabs::NetworkAclEntryParser.new(for_comparison)
+      #to_create = parser.entries_to_create(is)
+      #to_delete = parser.entries_to_delete(is)
+      #to_create.empty? && to_delete.empty?
+      true
     end
 
     validate do |value|
