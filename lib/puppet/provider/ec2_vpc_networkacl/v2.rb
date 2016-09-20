@@ -105,13 +105,13 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
         resources: [acl_id],
         tags: tags_for_resource,
       )
-    end
 
-    unless resource[:entries].empty?
-      create_entries(resource[:entries], acl_id)
-    end
-    unless resource[:associations].empty?
-      associate_subnets(resource[:associations],vpc_id,acl_id)
+      unless resource[:entries].empty?
+        create_entries(resource[:entries], acl_id)
+      end
+      unless resource[:associations].empty?
+        associate_subnets(resource[:associations],vpc_id,acl_id)
+      end
     end
 
     @property_hash[:ensure] = :present
