@@ -121,15 +121,17 @@ Puppet::Type.type(:ec2_securitygroup).provide(:v2, :parent => PuppetX::Puppetlab
 
     response = ec2.create_security_group(config)
 
-    ec2.create_tags(
-      resources: [response.group_id],
-      tags: tags_for_resource
-    ) if resource[:tags]
+    with_retries(:max_tries => 5) do
+      ec2.create_tags(
+        resources: [response.group_id],
+        tags: tags_for_resource
+      ) if resource[:tags]
 
-    @property_hash[:id] = response.group_id
-    rules = resource[:ingress]
-    authorize_ingress(rules)
-    @property_hash[:ensure] = :present
+      @property_hash[:id] = response.group_id
+      rules = resource[:ingress]
+      authorize_ingress(rules)
+      @property_hash[:ensure] = :present
+    end
   end
 
   def prepare_ingress_for_api(rule)
