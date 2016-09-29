@@ -99,7 +99,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
     )
     acl_id = response.data.network_acl.network_acl_id
 
-    with_retries(:max_tries => 5) do
+    with_retries(:max_tries => 10) do
       Puppet.debug(tags_for_resource)
       ec2.create_tags(
         resources: [acl_id],
@@ -151,7 +151,7 @@ Puppet::Type.type(:ec2_vpc_networkacl).provide(:v2, :parent => PuppetX::Puppetla
       end
     end
   end
-end
+  end
 
   def destroy
     Puppet.info("Deleting ACL #{name} in #{target_region}")
